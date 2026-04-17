@@ -256,7 +256,7 @@ for any miner already using a proxy.**
 ## Quick start
 
 ```bash
-git clone https://github.com/tnzxpool/xmr-hashguard
+git clone https://github.com/xmr-hashguard/xmr-hashguard
 cd xmr-hashguard
 npm install
 node demo.js       # runs both guards, ~100 s, no config needed
@@ -393,7 +393,10 @@ prevguard.start();
 
 ## Wrap XMRig directly
 
+> **Windows / PowerShell:** replace `\` with `` ` `` for line continuation, or use the one-liner form below.
+
 ```bash
+# bash / Git Bash / macOS / Linux
 node bin/xmrig-guard.js \
   --pool        pool.hashvault.pro:3333 \
   --wallet      YOUR_MONERO_ADDRESS \
@@ -403,6 +406,24 @@ node bin/xmrig-guard.js \
   --threshold   0.30 \
   --grace       60 \
   --threads     2
+```
+
+```powershell
+# PowerShell (Windows)
+node bin/xmrig-guard.js `
+  --pool        pool.hashvault.pro:3333 `
+  --wallet      YOUR_MONERO_ADDRESS `
+  --pool-health http://pool.hashvault.pro/pool/health `
+  --fallback    pool.supportxmr.com:3333 `
+  --fallback    gulf.moneroocean.stream:10128 `
+  --threshold   0.30 `
+  --grace       60 `
+  --threads     2
+```
+
+```bash
+# one-liner (any shell)
+node bin/xmrig-guard.js --pool pool.hashvault.pro:3333 --wallet YOUR_MONERO_ADDRESS --pool-health http://pool.hashvault.pro/pool/health --fallback pool.supportxmr.com:3333 --fallback gulf.moneroocean.stream:10128 --threshold 0.30 --grace 60 --threads 2
 ```
 
 ---
@@ -455,8 +476,8 @@ directly in-process to show the detection logic without a network dependency.
 
 | Repo | Role |
 |------|------|
-| [xmr-mesh](https://github.com/tnzxpool/xmr-mesh) | Encrypted P2P gossip transport — federation layer for `PrevhashMonitor` |
-| [xmr-proxy](https://github.com/tnzxpool/xmr-proxy) | Full proxy integrating `xmr-hashguard` + `xmr-mesh` for XMRig |
+| [xmr-mesh](https://github.com/xmr-hashguard/xmr-mesh) | Encrypted P2P gossip transport — federation layer for `PrevhashMonitor` |
+| [xmr-proxy](https://github.com/xmr-hashguard/xmr-proxy) | Full proxy integrating `xmr-hashguard` + `xmr-mesh` for XMRig |
 
 ---
 
