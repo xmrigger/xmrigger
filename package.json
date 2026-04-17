@@ -1,0 +1,24 @@
+{
+  "name": "xmr-hashguard",
+  "version": "0.1.0",
+  "description": "Pool safety guards for Monero miners: auto-evacuate on hashrate concentration and detect selfish mining via prevhash divergence.",
+  "license": "LGPL-2.1",
+  "main": "index.js",
+  "bin": {
+    "xmrig-guard": "bin/xmrig-guard.js"
+  },
+  "engines": {
+    "node": ">=15.0.0"
+  },
+  "keywords": [
+    "monero", "xmr", "mining", "pool", "hashrate", "guard",
+    "decentralization", "selfish-mining", "stratum", "prevhash"
+  ],
+  "scripts": {
+    "demo": "node demo.js",
+    "demo:hashrate": "node poc/demo.js",
+    "demo:prevhash": "node poc/demo-prevhash.js",
+    "test": "echo 'No test suite yet — see poc/ for live demos' && exit 0"
+  },
+  "dependencies": {}
+}
