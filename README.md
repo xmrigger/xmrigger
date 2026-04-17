@@ -256,8 +256,9 @@ for any miner already using a proxy.**
 ## Quick start
 
 ```bash
-git clone https://github.com/xmr-hashguard/xmr-hashguard
+git clone https://github.com/tnzxpool/xmr-hashguard
 cd xmr-hashguard
+npm install
 node demo.js       # runs both guards, ~100 s, no config needed
 ```
 
@@ -454,8 +455,8 @@ directly in-process to show the detection logic without a network dependency.
 
 | Repo | Role |
 |------|------|
-| [xmr-mesh](https://github.com/xmr-mesh/xmr-mesh) | Encrypted P2P gossip transport — federation layer for `PrevhashMonitor` |
-| [xmr-proxy](https://github.com/xmr-proxy/xmr-proxy) | Full proxy integrating `xmr-hashguard` + `xmr-mesh` for XMRig |
+| [xmr-mesh](https://github.com/tnzxpool/xmr-mesh) | Encrypted P2P gossip transport — federation layer for `PrevhashMonitor` |
+| [xmr-proxy](https://github.com/tnzxpool/xmr-proxy) | Full proxy integrating `xmr-hashguard` + `xmr-mesh` for XMRig |
 
 ---
 
