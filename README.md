@@ -251,6 +251,27 @@ in-house hashrate — operationally difficult, and already detectable by Guard 1
 problem: zero Monero protocol changes, zero miner configuration, zero friction
 for any miner already using a proxy.**
 
+### Bootstrap
+
+The list of Monero mining pools is public and not pool-controlled.
+A fresh node uses it to find seed peers at startup without any prior
+federation state.
+
+Until the first peer from a different pool connects, the node operates in
+**solo mode**: Guard 1 (hashrate concentration) is fully active;
+Guard 2 (selfish mining) is dormant but armed.
+
+As soon as one peer joins from a different pool, Guard 2 activates
+automatically — no configuration change needed.
+
+Once two or more nodes are connected, the mesh carries peer discovery
+itself: new nodes learn about other proxies through the federation
+without needing a central directory.
+
+The first node in existence is therefore never unprotected — it has
+Guard 1 from the start, and Guard 2 the moment a second independent
+observer appears.
+
 ---
 
 ## Quick start
