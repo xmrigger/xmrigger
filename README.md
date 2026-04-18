@@ -1,8 +1,8 @@
 # xmrigger
 
-**Monero pool safety guards — no protocol changes, no miner modifications.** 
-A layer of self-protection for miners and monero network. 
-Sits in front of XMRig. Detects two distinct pool threats. Evacuates automatically.
+Core detection library. Implements two guards: `HashrateMonitor` watches pool hashrate concentration and evacuates when a pool exceeds the threshold; `PrevhashMonitor` detects selfish mining by comparing prevhash values across federated proxies. Zero dependencies. Can be used standalone in any miner wrapper.
+
+Part of the [xmrigger suite](https://github.com/xmrigger): `xmrigger` · `xmrigger-mesh` · `xmrigger-proxy`
 
 
 [![License: LGPL-2.1](https://img.shields.io/badge/License-LGPL--2.1-blue.svg)](LICENSE)
