@@ -420,10 +420,10 @@ const monitor = new HashrateMonitor({
   gracePeriodMs:  60_000,
   fallbackPools:  [{ host: 'pool.supportxmr.com', port: 3333 }],
 });
-hashguard.on('evacuate', ({ reason, fallback }) => {
+monitor.on('evacuate', ({ reason, fallback }) => {
   // restart your miner on fallback
 });
-hashguard.start();
+monitor.start();
 
 // Guard 2 — Selfish mining (requires federation of ≥2 proxies)
 const prevguard = new PrevhashMonitor({
