@@ -1,12 +1,12 @@
 {
-  "name": "xmr-hashguard",
+  "name": "xmrigger",
   "version": "0.1.0",
-  "description": "Pool safety guards for Monero miners: auto-evacuate on hashrate concentration and detect selfish mining via prevhash divergence.",
+  "description": "Protects XMRig miners from oversized or dishonest pools: auto-evacuates on hashrate concentration and detects selfish mining via prevhash divergence.",
   "author": "tnzx@proton.me",
   "license": "LGPL-2.1",
   "main": "index.js",
   "bin": {
-    "xmrig-guard": "bin/xmrig-guard.js"
+    "xmrigger": "bin/xmrig-guard.js"
   },
   "engines": {
     "node": ">=15.0.0"
