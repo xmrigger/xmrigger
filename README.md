@@ -224,12 +224,12 @@ from network jitter.
 | Pool stuck on stale tip | ✓ prevhash stops advancing |
 | Unknown dark pool (no external miners) | ✗ no Stratum leakage possible |
 
-### Compatibility with steganographic proxies
+### Compatibility with extended proxies
 
-Proxies that carry additional payloads within the Stratum stream are fully
-compatible. Those payloads travel miner → proxy and are intercepted there.
-Prevhash extraction happens on the pool → proxy path. The two mechanisms
-are orthogonal and do not interfere.
+Proxies that carry additional data alongside the Stratum stream are fully
+compatible. xmrigger operates exclusively on the pool → proxy path to extract
+prevhash from job notifications. Any additional processing on the miner →
+proxy path is orthogonal and does not interfere.
 
 During the divergence window (before evacuation triggers), miners on the
 suspect pool are contributing hashrate to the private fork. This is
