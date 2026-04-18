@@ -14,6 +14,10 @@
  *
  * Phases:
  *   SAFE  (10%) → WARN (27%) → CRIT (32%) → FORK → SAFE2 (8%)
+ *
+ * @version  0.1.0
+ * @released 2026-04-18
+ * @license  LGPL-2.1
  */
 'use strict';
 

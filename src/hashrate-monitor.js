@@ -2,6 +2,10 @@
 /**
  * hashrate-monitor.js — Hashrate Concentration Guard
  *
+ * @version  0.1.0
+ * @released 2026-04-18
+ * @license  LGPL-2.1
+ *
  * Computes pool/network hashrate ratio from INDEPENDENT sources so a
  * malicious pool cannot hide concentration by refusing to report stats.
  *

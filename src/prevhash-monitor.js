@@ -2,6 +2,10 @@
 /**
  * prevhash-monitor.js — Cross-pool prevhash divergence detector
  *
+ * @version  0.1.0
+ * @released 2026-04-18
+ * @license  LGPL-2.1
+ *
  * Detects selfish mining by comparing the `prevhash` field from Stratum job
  * messages across proxy peers in a federation.
  *

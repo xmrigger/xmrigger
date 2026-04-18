@@ -3,6 +3,10 @@
  *
  * Shows how to integrate the guard into any existing miner wrapper
  * without using xmrig-guard.js.
+ *
+ * @version  0.1.0
+ * @released 2026-04-18
+ * @license  LGPL-2.1
  */
 'use strict';
 
