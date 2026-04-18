@@ -274,6 +274,36 @@ observer appears.
 
 ---
 
+## Tuning — avoiding false positives
+
+### Guard 1 thresholds
+
+| Parameter | Default | Lower value | Higher value |
+|-----------|---------|-------------|--------------|
+| `threshold` | `0.30` (30%) | More sensitive, may flag legitimate large pools | Fewer false alarms, catches only extreme concentration |
+| `gracePeriodMs` | `60 000` | Evacuates faster — less exposure but more disruptive | Gives pool more time to drop hashrate naturally |
+| `pollIntervalMs` | `30 000` | Detects faster — heavier on network requests | Less traffic, slower reaction |
+
+Practical guidance:
+- Pool at 30–40%: start with `threshold: 0.35`. Monero's largest honest pools occasionally touch 35%.
+- Pool at 40%+: the default 30% threshold is appropriate. A pool that large is already a concern.
+- Noisy environments (VPN, flaky uplinks): raise `gracePeriodMs` to `120_000` before lowering `threshold`.
+
+### Guard 2 thresholds
+
+| Parameter | Default | Lower value | Higher value |
+|-----------|---------|-------------|--------------|
+| `divergenceMs` | `20 000` | Catches shorter selfish-mining windows; risks triggering on 1–2 s block propagation | Safer against jitter; misses short attacks |
+| `pollIntervalMs` | `3 000` | Tighter time resolution | Less CPU, coarser detection window |
+| `minPeersForAlert` | `1` | Alert on first diverging peer | Require majority — reduces Sybil risk but needs more peers |
+
+Practical guidance:
+- Monero block time is ~120 s; propagation delay is 1–2 s. Keep `divergenceMs ≥ 9 000` to avoid false alarms from normal propagation.
+- In a small federation (2–3 peers), `minPeersForAlert: 1` is correct. With 10+ peers, raise it to `2` or `3`.
+- If you see spurious alerts, increase `divergenceMs` by 5 000 and check your peers' clock sync (NTP drift causes apparent divergence).
+
+---
+
 ## Quick start
 
 ```bash

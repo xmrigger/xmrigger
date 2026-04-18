@@ -13,7 +13,7 @@ const monitor = new HashrateMonitor({
   // poolStatsUrl: 'https://miningpoolstats.stream/api/monero/hashvault',
 
   // Fallback: pool's own endpoint (less trusted — pool could lie)
-  poolHealthUrl: 'http://your-pool.example.com/pool/health',
+  poolHealthUrl: 'http://pool.hashvault.pro/pool/health',
 
   // Network hashrate: fetched from 6 independent Monero nodes automatically.
   // Override only for testing:
