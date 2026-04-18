@@ -1,4 +1,4 @@
-# xmr-hashguard
+# xmrigger
 
 **Monero pool safety guards — no protocol changes, no miner modifications.** 
 A layer of self-protection for miners and monero network. 
@@ -84,7 +84,7 @@ sequenceDiagram
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        xmr-hashguard                        │
+│                        xmrigger                        │
 │                                                             │
 │  XMRig ──Stratum──▶ proxy ──Stratum──▶ pool                 │
 │                        │                                    │
@@ -277,8 +277,8 @@ observer appears.
 ## Quick start
 
 ```bash
-git clone https://github.com/xmr-hashguard/xmr-hashguard
-cd xmr-hashguard
+git clone https://github.com/xmrigger/xmrigger
+cd xmrigger
 npm install
 node demo.js       # runs both guards, ~100 s, no config needed
 ```
@@ -310,7 +310,7 @@ Expected sequence:
 
 ```
 ╔══════════════════════════════════════════════════════════╗
-║           xmr-hashguard v0.1.0  —  Live Demo            ║
+║           xmrigger v0.1.0  —  Live Demo            ║
 ╠══════════════════════════════════════════════════════════╣
 ║  Threshold : 30%    Warn at : 25.5%                     ║
 ║  Grace     : 9 s    Poll    : every 3 s                 ║
@@ -350,7 +350,7 @@ Expected sequence:
 
 ```
 ╔══════════════════════════════════════════════════════════╗
-║    xmr-hashguard — Prevhash Divergence Demo (v0.1.0)    ║
+║    xmrigger — Prevhash Divergence Demo (v0.1.0)    ║
 ╚══════════════════════════════════════════════════════════╝
 
 [guard]         monitors started  poll=3s  divergence-threshold=9s
@@ -381,7 +381,7 @@ Expected sequence:
 ## Use as a library
 
 ```js
-const { HashrateMonitor, PrevhashMonitor } = require('xmr-hashguard');
+const { HashrateMonitor, PrevhashMonitor } = require('xmrigger');
 
 // Guard 1 — Hashrate concentration
 const hashguard = new HashrateMonitor({
