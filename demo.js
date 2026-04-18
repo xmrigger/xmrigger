@@ -50,7 +50,7 @@ ${B('╚════════════════════════
 `);
 
 banner(1, 'Hashrate Concentration Guard',
-  'Auto-evacuate when a pool exceeds 30% of network hashrate.');
+  'Auto-evacuate when a pool exceeds 43% of network hashrate.');
 run('poc/demo.js');
 
 banner(2, 'Selfish Mining Detection (Prevhash)',

@@ -19,7 +19,7 @@ const monitor = new HashrateMonitor({
   // Override only for testing:
   // networkDiffUrls: ['http://127.0.0.1:19999/api/networkinfo'],
 
-  threshold:      0.30,   // 30% of Monero network hashrate
+  threshold:      0.43,   // 43% of Monero network hashrate (practical alarm threshold)
   pollIntervalMs: 30_000, // check every 30s
   gracePeriodMs:  60_000, // 60s countdown before disconnect
 
