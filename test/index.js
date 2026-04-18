@@ -4,11 +4,10 @@
  * Run: node test/index.js
  */
 
-import { test, describe } from 'node:test';
-import assert from 'node:assert/strict';
-import { EventEmitter } from 'node:events';
-import { HashrateMonitor } from '../src/hashrate-monitor.js';
-import { PrevhashMonitor } from '../src/prevhash-monitor.js';
+const { test, describe } = require('node:test');
+const assert             = require('node:assert/strict');
+const { HashrateMonitor } = require('../src/hashrate-monitor');
+const { PrevhashMonitor } = require('../src/prevhash-monitor');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
