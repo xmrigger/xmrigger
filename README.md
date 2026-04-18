@@ -22,7 +22,7 @@ would reject. None reached production.
 **The passive subset that actually works:**
 
 A pool engaged in selfish mining must distribute Stratum jobs to its workers.
-Every `mining.notify` (Stratum v1) or `SetNewPrevHash` (Stratum v2) carries
+Every `mining.notify` carries
 `prevhash` — the hash of the block being extended. A pool on a private fork
 cannot hide this: it must hand the private chain tip to every miner it employs,
 or those miners produce worthless work.
@@ -384,7 +384,7 @@ Expected sequence:
 const { HashrateMonitor, PrevhashMonitor } = require('xmrigger');
 
 // Guard 1 — Hashrate concentration
-const hashguard = new HashrateMonitor({
+const monitor = new HashrateMonitor({
   poolHealthUrl:  'http://your-pool.com/pool/health',
   threshold:      0.30,
   gracePeriodMs:  60_000,
