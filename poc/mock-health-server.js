@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * mock-health-server.js — Mock /pool/health server for xmr-hashguard POC
+ * mock-health-server.js — Mock /pool/health server for xmrigger POC
  *
  * Simulates a pool's hashrate concentration evolving over time so you can
  * observe the guard's warn → crit → grace → evacuate sequence locally

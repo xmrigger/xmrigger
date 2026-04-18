@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * demo.js — xmr-hashguard combined demonstration
+ * demo.js — xmrigger combined demonstration
  *
  * Runs both guards back-to-back in a single terminal session.
  * No XMRig required. No external network calls. No configuration.
@@ -42,7 +42,7 @@ function run(file) {
 
 console.log(`
 ${B('╔══════════════════════════════════════════════════════════╗')}
-${B('║')}              ${B('xmr-hashguard  v0.1.0  —  Demo')}              ${B('║')}
+${B('║')}              ${B('xmrigger  v0.1.0  —  Demo')}              ${B('║')}
 ${B('╠══════════════════════════════════════════════════════════╣')}
 ${B('║')}  Two guards, two threats, zero protocol changes.        ${B('║')}
 ${B('║')}  Runtime: ~100 s  ·  No XMRig  ·  No network calls     ${B('║')}

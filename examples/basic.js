@@ -6,7 +6,7 @@
  */
 'use strict';
 
-const { HashrateMonitor } = require('xmr-hashguard');
+const { HashrateMonitor } = require('xmrigger');
 
 const monitor = new HashrateMonitor({
   // Preferred: independent third-party source for pool hashrate

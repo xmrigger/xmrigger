@@ -164,7 +164,7 @@ monitor.on('safe', ({ hashratePct }) => {
 
 console.log(`
 ┌─────────────────────────────────────────────┐
-│           xmr-hashguard  v0.1.0             │
+│           xmrigger  v0.1.0             │
 ├─────────────────────────────────────────────┤
 │  Pool      ${(primaryPool + '                         ').slice(0,33)}│
 │  Threshold ${((threshold*100).toFixed(0)+'%'+'                         ').slice(0,33)}│
