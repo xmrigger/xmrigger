@@ -96,7 +96,7 @@ server.listen(0, '127.0.0.1', () => {
 
   console.log(`
 ${B('╔══════════════════════════════════════════════════════════╗')}
-${B('║')}    ${B('xmr-hashguard — Prevhash Divergence Demo (v0.1.0)')}    ${B('║')}
+${B('║')}    ${B('xmrigger — Prevhash Divergence Demo (v0.1.0)')}    ${B('║')}
 ${B('╠══════════════════════════════════════════════════════════╣')}
 ${B('║')}  Technique : cross-pool prevhash comparison             ${B('║')}
 ${B('║')}  Requires  : zero protocol changes                      ${B('║')}

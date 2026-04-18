@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * poc/demo.js — xmr-hashguard self-contained demonstration
+ * poc/demo.js — xmrigger self-contained demonstration
  *
  * No XMRig required. No external network calls. One command:
  *
@@ -88,7 +88,7 @@ function runDemo(port) {
 
   console.log(`
 ${B('╔══════════════════════════════════════════════════════════╗')}
-${B('║')}           ${B('xmr-hashguard v0.1.0  —  Live Demo')}            ${B('║')}
+${B('║')}           ${B('xmrigger v0.1.0  —  Live Demo')}            ${B('║')}
 ${B('╠══════════════════════════════════════════════════════════╣')}
 ${B('║')}  Threshold : 30%    Warn at : 25.5%                     ${B('║')}
 ${B('║')}  Grace     : 9 s    Poll    : every 3 s                 ${B('║')}

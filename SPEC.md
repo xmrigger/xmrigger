@@ -1,4 +1,4 @@
-# xmr-hashguard Protocol Specification v0.1
+# xmrigger Protocol Specification v0.1
 
 ## Problem
 
@@ -232,7 +232,7 @@ A misconfigured peer cannot force evacuation on honest proxies.
 ### PrevhashMonitor API
 
 ```js
-const { PrevhashMonitor } = require('xmr-hashguard');
+const { PrevhashMonitor } = require('xmrigger');
 
 const mon = new PrevhashMonitor({
   poolId:        'pool.hashvault.pro:3333',
