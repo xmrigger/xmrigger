@@ -75,7 +75,7 @@ sequenceDiagram
 
 | Guard | Threat | Mechanism |
 |-------|--------|-----------|
-| `HashrateMonitor` | Pool accumulates >30% of network hashrate | Polls independent hashrate sources; evacuates on threshold breach |
+| `HashrateMonitor` | Pool accumulates >43% of network hashrate | Polls independent hashrate sources; evacuates on threshold breach |
 | `PrevhashMonitor` | Pool withholds blocks (selfish mining) | Cross-pool prevhash comparison via federation mesh |
 
 ---
@@ -122,7 +122,7 @@ flowchart TD
     D --> E{R < 25.5%?}
     E -->|yes| F([✓ SAFE — continue mining])
 
-    E -->|no| G{R < 30%?}
+    E -->|no| G{R < 43%?}
     G -->|yes| H([⚠ WARN — log, no action])
 
     G -->|no| I([🔴 CRIT — start grace period])
@@ -280,13 +280,17 @@ observer appears.
 
 | Parameter | Default | Lower value | Higher value |
 |-----------|---------|-------------|--------------|
-| `threshold` | `0.30` (30%) | More sensitive, may flag legitimate large pools | Fewer false alarms, catches only extreme concentration |
+| `threshold` | `0.43` (43%) | More sensitive, evacuates sooner | Fewer disruptions, only extreme concentration triggers |
 | `gracePeriodMs` | `60 000` | Evacuates faster — less exposure but more disruptive | Gives pool more time to drop hashrate naturally |
 | `pollIntervalMs` | `30 000` | Detects faster — heavier on network requests | Less traffic, slower reaction |
 
+**Why 43% and not 30%?**
+
+30% is the theoretical threshold where selfish mining first becomes _possible_ (Eyal & Sirer, 2014). 43% is where it becomes _reliably profitable_ without requiring exceptional luck — the threshold the Monero research community uses when evaluating pool concentration risk in practice. Large but honest pools (SupportXMR, Nanopool) regularly operate in the 25–40% range; triggering at 30% would cause unnecessary evacuations from legitimate pools.
+
 Practical guidance:
-- Pool at 30–40%: start with `threshold: 0.35`. Monero's largest honest pools occasionally touch 35%.
-- Pool at 40%+: the default 30% threshold is appropriate. A pool that large is already a concern.
+- Pool at 43–50%: default threshold triggers — evacuate.
+- Pool at 30–43%: raise awareness with `--threshold 0.30` only if you want maximum sensitivity.
 - Noisy environments (VPN, flaky uplinks): raise `gracePeriodMs` to `120_000` before lowering `threshold`.
 
 ### Guard 2 thresholds
@@ -532,6 +536,7 @@ directly in-process to show the detection logic without a network dependency.
 
 ---
 
-## License
+## Project
 
-[LGPL-2.1](LICENSE) — compatible with GPL-3.0 (XMRig) and other open-source miners.
+`xmrigger` is part of the [TNZX project](https://github.com/tnzx-project).
+Released under [LGPL-2.1](LICENSE) — compatible with GPL-3.0 (XMRig) and other open-source miners.
