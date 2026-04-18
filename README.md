@@ -314,7 +314,7 @@ Practical guidance:
 git clone https://github.com/xmrigger/xmrigger
 cd xmrigger
 npm install
-node demo.js       # runs both guards, ~100 s, no config needed
+node demo.js       # runs both guards, ~135 s, no config needed
 ```
 
 ---
@@ -328,7 +328,7 @@ node demo.js
 # or:  npm run demo
 ```
 
-Runs the hashrate guard demo (~50 s) then the prevhash guard demo (~50 s).
+Runs the hashrate guard demo (~75 s) then the prevhash guard demo (~60 s).
 No XMRig, no real pools, no external calls.
 
 ---

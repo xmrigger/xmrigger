@@ -43,6 +43,7 @@ Reference sources (Monero mainnet):
 | `https://moneroblocks.info/api/get_stats` | `difficulty` |
 | `https://localmonero.co/blocks/api/get_stats` | `last_difficulty` |
 | `https://p2pool.io/api/pool_info` | `mainchain.difficulty` |
+| `https://mini.p2pool.io/api/pool_info` | `mainchain.difficulty` |
 
 `H_net = floor(difficulty / 120)`
 
