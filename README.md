@@ -41,9 +41,9 @@ that one pool is building on a private chain.
 ```mermaid
 sequenceDiagram
     participant M as XMRig
-    participant A as xmr-proxy A<br/>(Pool X — honest)
-    participant NET as xmr-mesh
-    participant B as xmr-proxy B<br/>(Pool Y — selfish)
+    participant A as xmrigger-proxy A<br/>(Pool X — honest)
+    participant NET as xmrigger-mesh
+    participant B as xmrigger-proxy B<br/>(Pool Y — selfish)
     participant PY as Pool Y
 
     Note over A,B: Normal operation — chains in sync
@@ -497,8 +497,8 @@ directly in-process to show the detection logic without a network dependency.
 
 | Repo | Role |
 |------|------|
-| [xmr-mesh](https://github.com/xmr-hashguard/xmr-mesh) | Encrypted P2P gossip transport — federation layer for `PrevhashMonitor` |
-| [xmr-proxy](https://github.com/xmr-hashguard/xmr-proxy) | Full proxy integrating `xmr-hashguard` + `xmr-mesh` for XMRig |
+| [xmrigger-mesh](https://github.com/xmrigger/xmrigger-mesh) | Encrypted P2P gossip transport — federation layer for `PrevhashMonitor` |
+| [xmrigger-proxy](https://github.com/xmrigger/xmrigger-proxy) | Full proxy integrating `xmrigger` + `xmrigger-mesh` for XMRig |
 
 ---
 
