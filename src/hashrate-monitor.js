@@ -61,7 +61,7 @@ class HashrateMonitor extends EventEmitter {
     poolStatsUrl     = null,
     poolHealthUrl    = null,
     networkDiffUrls  = DEFAULT_NETWORK_URLS,
-    threshold        = 0.30,
+    threshold        = 0.43,
     pollIntervalMs   = POLL_DEFAULT,
     gracePeriodMs    = GRACE_DEFAULT,
     fallbackPools    = [],
