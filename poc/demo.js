@@ -11,9 +11,9 @@
  *
  * Phase sequence (12s each):
  *   SAFE  (10%)         — below warn threshold
- *   WARN  (27%)         — ⚠ warn event  [threshold=30%, warn=25.5%]
- *   CRIT  (35%)         — 🔴 crit + grace countdown → 🚨 evacuate
- *   FORK  (35%+fork)    — ⚡ fork detected → 🚨 immediate evacuate
+ *   WARN  (40%)         — ⚠ warn event  [threshold=43%, warn=36.6%]
+ *   CRIT  (50%)         — 🔴 crit + grace countdown → 🚨 evacuate
+ *   FORK  (50%+fork)    — ⚡ fork detected → 🚨 immediate evacuate
  *   SAFE2  (8%)         — ✓ safe — mining resumed
  *
  * @license LGPL-2.1
@@ -46,9 +46,9 @@ const NETWORK_DIFF = 1_000_000_000 * 120;   // difficulty → 1 GH/s network
 
 const PHASES = [
   { name: 'SAFE',  pct: 0.10, fork: false },
-  { name: 'WARN',  pct: 0.27, fork: false },
-  { name: 'CRIT',  pct: 0.35, fork: false },
-  { name: 'FORK',  pct: 0.35, fork: true  },
+  { name: 'WARN',  pct: 0.40, fork: false },
+  { name: 'CRIT',  pct: 0.50, fork: false },
+  { name: 'FORK',  pct: 0.50, fork: true  },
   { name: 'SAFE2', pct: 0.08, fork: false },
 ];
 const PHASE_MS = 12_000;
@@ -90,7 +90,7 @@ function runDemo(port) {
 ${B('╔══════════════════════════════════════════════════════════╗')}
 ${B('║')}           ${B('xmrigger v0.1.0  —  Live Demo')}            ${B('║')}
 ${B('╠══════════════════════════════════════════════════════════╣')}
-${B('║')}  Threshold : 30%    Warn at : 25.5%                     ${B('║')}
+${B('║')}  Threshold : 43%    Warn at : 36.6%                     ${B('║')}
 ${B('║')}  Grace     : 9 s    Poll    : every 3 s                 ${B('║')}
 ${B('║')}  Sequence  : SAFE → WARN → CRIT → FORK → SAFE2          ${B('║')}
 ${B('║')}             12 s each  ·  ~75 s total  ·  no XMRig      ${B('║')}
@@ -100,7 +100,7 @@ ${B('╚════════════════════════
   const monitor = new HashrateMonitor({
     poolHealthUrl:   `${BASE}/pool/health`,
     networkDiffUrls: [`${BASE}/api/networkinfo`],
-    threshold:       0.30,
+    threshold:       0.43,
     pollIntervalMs:  3_000,
     gracePeriodMs:   9_000,
     fallbackPools: [
@@ -142,7 +142,7 @@ ${B('╚════════════════════════
 
   // ── Start ───────────────────────────────────────────────────────────────────
 
-  line(cyan, '[guard]', `monitor started  threshold=30%  warn=25.5%  poll=3s  grace=9s\n`);
+  line(cyan, '[guard]', `monitor started  threshold=43%  warn=36.6%  poll=3s  grace=9s\n`);
   monitor.start();
 
   // Auto-exit after all phases + small buffer

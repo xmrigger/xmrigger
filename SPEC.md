@@ -2,8 +2,10 @@
 
 ## Problem
 
-A Monero mining pool that accumulates more than ~30% of total network hashrate
-poses a risk to the 51%-attack security boundary. Miners individually have no
+A Monero mining pool that accumulates more than ~43% of total network hashrate
+poses a reliable selfish-mining risk. The theoretical onset is ~30% (Eyal & Sirer),
+but the Monero community uses 43% as the practical alarm threshold — the point at
+which selfish mining becomes reliably profitable without exceptional luck. Miners individually have no
 automatic mechanism to detect this and switch pools. A pool can simply refuse
 to report its own share of network hashrate, making opt-in monitoring
 ineffective.
@@ -21,7 +23,7 @@ Define a minimal protocol that any miner, wrapper, or proxy can implement to:
 - **Pool hashrate** (H_pool): total hashrate contributed to the target pool
 - **Network hashrate** (H_net): total Monero network hashrate = `difficulty / 120`
 - **Concentration ratio** (R): `R = H_pool / H_net`
-- **Threshold** (T): configurable fraction, recommended default **0.30** (30%)
+- **Threshold** (T): configurable fraction, recommended default **0.43** (43%)
 - **Warn level** (W): `W = T × 0.85`
 
 ## Data Sources
@@ -297,7 +299,7 @@ The two guards are **complementary**:
 
 | Guard | Detects | Trigger |
 |-------|---------|---------|
-| HashrateMonitor | Pool exceeds concentration threshold (e.g. 30%) | Pool ratio ≥ T |
+| HashrateMonitor | Pool exceeds concentration threshold (e.g. 43%) | Pool ratio ≥ T |
 | PrevhashMonitor | Pool withholds blocks (selfish mining) | prevhash diverges from peers |
 
 A pool can be dangerous with only 25% hashrate if it mines selfishly.

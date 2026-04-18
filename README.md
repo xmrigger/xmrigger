@@ -346,17 +346,17 @@ Expected sequence:
 ╔══════════════════════════════════════════════════════════╗
 ║           xmrigger v0.1.0  —  Live Demo            ║
 ╠══════════════════════════════════════════════════════════╣
-║  Threshold : 30%    Warn at : 25.5%                     ║
+║  Threshold : 43%    Warn at : 36.6%                     ║
 ║  Grace     : 9 s    Poll    : every 3 s                 ║
 ╚══════════════════════════════════════════════════════════╝
 
 [guard]    monitor started
 
-[mock]     → phase WARN   27%
-⚠  WARN    pool=27.0%  threshold=30%
+[mock]     → phase WARN   40%
+⚠  WARN    pool=40.0%  threshold=43%
 
-[mock]     → phase CRIT   35%
-🔴 CRIT    pool=35.0%  grace=9s
+[mock]     → phase CRIT   50%
+🔴 CRIT    pool=50.0%  grace=9s
    tick    evacuating in 6s…
    tick    evacuating in 3s…
 🚨 EVACUATE  reason=threshold  → pool.supportxmr.com:3333
@@ -420,7 +420,7 @@ const { HashrateMonitor, PrevhashMonitor } = require('xmrigger');
 // Guard 1 — Hashrate concentration
 const monitor = new HashrateMonitor({
   poolHealthUrl:  'http://your-pool.com/pool/health',
-  threshold:      0.30,
+  threshold:      0.43,
   gracePeriodMs:  60_000,
   fallbackPools:  [{ host: 'pool.supportxmr.com', port: 3333 }],
 });
@@ -458,7 +458,7 @@ node bin/xmrig-guard.js \
   --pool-health http://pool.hashvault.pro/pool/health \
   --fallback    pool.supportxmr.com:3333 \
   --fallback    gulf.moneroocean.stream:10128 \
-  --threshold   0.30 \
+  --threshold   0.43 \
   --grace       60 \
   --threads     2
 ```
@@ -471,14 +471,14 @@ node bin/xmrig-guard.js `
   --pool-health http://pool.hashvault.pro/pool/health `
   --fallback    pool.supportxmr.com:3333 `
   --fallback    gulf.moneroocean.stream:10128 `
-  --threshold   0.30 `
+  --threshold   0.43 `
   --grace       60 `
   --threads     2
 ```
 
 ```bash
 # one-liner (any shell)
-node bin/xmrig-guard.js --pool pool.hashvault.pro:3333 --wallet YOUR_MONERO_ADDRESS --pool-health http://pool.hashvault.pro/pool/health --fallback pool.supportxmr.com:3333 --fallback gulf.moneroocean.stream:10128 --threshold 0.30 --grace 60 --threads 2
+node bin/xmrig-guard.js --pool pool.hashvault.pro:3333 --wallet YOUR_MONERO_ADDRESS --pool-health http://pool.hashvault.pro/pool/health --fallback pool.supportxmr.com:3333 --fallback gulf.moneroocean.stream:10128 --threshold 0.43 --grace 60 --threads 2
 ```
 
 ---

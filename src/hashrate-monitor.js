@@ -50,7 +50,7 @@ class HashrateMonitor extends EventEmitter {
    * @param {string}   [opts.poolStatsUrl]    independent third-party stats URL
    * @param {string}   [opts.poolHealthUrl]   pool's own /pool/health (untrusted fallback)
    * @param {string[]} [opts.networkDiffUrls] override default network API list
-   * @param {number}   [opts.threshold]       fraction 0.0–1.0 (default 0.30)
+   * @param {number}   [opts.threshold]       fraction 0.0–1.0 (default 0.43)
    * @param {number}   [opts.pollIntervalMs]
    * @param {number}   [opts.gracePeriodMs]
    * @param {object[]} [opts.fallbackPools]   [{host, port}, …]

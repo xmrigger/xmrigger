@@ -17,7 +17,7 @@
  *     --pool-health http://pool.hashvault.pro/pool/health \
  *     --fallback  pool.supportxmr.com:3333 \
  *     --fallback  gulf.moneroocean.stream:10128 \
- *     [--threshold 0.30]  (default: 30%)
+ *     [--threshold 0.43]  (default: 43%)
  *     [--grace 60]        (default: 60s)
  *     [--poll 30]         (default: 30s)
  *     [--threads 2]
@@ -53,7 +53,7 @@ const poolHealthUrl     = getArg('pool-health',      null);
 const networkDiffUrlArg = getArg('network-diff-url', null);
 const wallet            = getArg('wallet',           null);
 const threads           = parseInt(getArg('threads', '1'));
-const threshold         = parseFloat(getArg('threshold', '0.30'));
+const threshold         = parseFloat(getArg('threshold', '0.43'));
 const graceSecs         = parseInt(getArg('grace',   '60'));
 const pollSecs          = parseInt(getArg('poll',    '30'));
 
