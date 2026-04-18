@@ -119,7 +119,7 @@ flowchart TD
     B --> C[Fetch H_pool from\nindependent source]
     C --> D[R = H_pool / H_net]
 
-    D --> E{R < 25.5%?}
+    D --> E{R < 36.6%?}
     E -->|yes| F([✓ SAFE — continue mining])
 
     E -->|no| G{R < 43%?}
@@ -127,7 +127,7 @@ flowchart TD
 
     G -->|no| I([🔴 CRIT — start grace period])
     I --> J{grace 60 s expires?}
-    J -->|R drops below 25.5%| F
+    J -->|R drops below 36.6%| F
     J -->|yes| K([🚨 EVACUATE])
     K --> L[Stop miner\nSwitch to fallback pool\nResume monitoring]
     L --> A
@@ -298,8 +298,8 @@ Practical guidance:
 | Parameter | Default | Lower value | Higher value |
 |-----------|---------|-------------|--------------|
 | `divergenceMs` | `20 000` | Catches shorter selfish-mining windows; risks triggering on 1–2 s block propagation | Safer against jitter; misses short attacks |
-| `pollIntervalMs` | `3 000` | Tighter time resolution | Less CPU, coarser detection window |
-| `minPeersForAlert` | `1` | Alert on first diverging peer | Require majority — reduces Sybil risk but needs more peers |
+| `pollIntervalMs` | `5 000` | Tighter time resolution | Less CPU, coarser detection window |
+| `minPeersForAlert` | `2` | Alert on first diverging peer | Require majority — reduces Sybil risk but needs more peers |
 
 Practical guidance:
 - Monero block time is ~120 s; propagation delay is 1–2 s. Keep `divergenceMs ≥ 9 000` to avoid false alarms from normal propagation.
