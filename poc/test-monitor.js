@@ -2,6 +2,10 @@
 /**
  * test-monitor.js — exercise HashrateMonitor against the mock server
  * No XMRig required. Prints all events with timestamps.
+ *
+ * @version  0.1.0
+ * @released 2026-04-18
+ * @license  LGPL-2.1
  */
 'use strict';
 

@@ -2,6 +2,10 @@
 /**
  * xmrig-guard — XMRig wrapper with hashrate concentration guard
  *
+ * @version  0.1.0
+ * @released 2026-04-18
+ * @license  LGPL-2.1
+ *
  * Wraps XMRig and monitors the pool's share of total Monero network hashrate.
  * When the pool exceeds the configured threshold, XMRig is gracefully
  * restarted pointing to the next fallback pool.

@@ -17,7 +17,9 @@
  *   [9 s in]  — divergence confirmed after persistence threshold
  *   REVEAL    — Pool B switches to block_101_public   (resolved)
  *
- * @license LGPL-2.1
+ * @version  0.1.0
+ * @released 2026-04-18
+ * @license  LGPL-2.1
  */
 'use strict';
 

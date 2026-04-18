@@ -2,6 +2,10 @@
 /**
  * xmrigger test suite — HashrateMonitor + PrevhashMonitor
  * Run: node test/index.js
+ *
+ * @version  0.1.0
+ * @released 2026-04-18
+ * @license  LGPL-2.1
  */
 
 const { test, describe } = require('node:test');
