@@ -8,6 +8,12 @@
   "bin": {
     "xmrigger": "bin/xmrig-guard.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xmrigger/xmrigger.git"
+  },
+  "homepage": "https://github.com/xmrigger/xmrigger#readme",
+  "bugs": "https://github.com/xmrigger/xmrigger/issues",
   "engines": {
     "node": ">=15.0.0"
   },
