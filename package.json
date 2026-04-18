@@ -19,7 +19,7 @@
     "demo": "node demo.js",
     "demo:hashrate": "node poc/demo.js",
     "demo:prevhash": "node poc/demo-prevhash.js",
-    "test": "echo 'No test suite yet — see poc/ for live demos' && exit 0"
+    "test": "node test/index.js"
   },
   "dependencies": {}
 }
