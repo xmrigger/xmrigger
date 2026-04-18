@@ -319,6 +319,20 @@ node demo.js       # runs both guards, ~135 s, no config needed
 
 ---
 
+## Tests
+
+```bash
+npm test
+# or: node test/index.js
+```
+
+10 tests — no external dependencies, no network calls.
+
+Covers: HashrateMonitor state machine (SAFE→WARN→CRIT→GRACE→EVACUATE), fork
+detection, grace period, PrevhashMonitor divergence detection and resolution.
+
+---
+
 ## POC demos
 
 ### Combined (both guards)
