@@ -552,5 +552,4 @@ directly in-process to show the detection logic without a network dependency.
 
 ## Project
 
-`xmrigger` is part of the [TNZX project](https://github.com/tnzx-project).
 Released under [LGPL-2.1](LICENSE) — compatible with GPL-3.0 (XMRig) and other open-source miners.

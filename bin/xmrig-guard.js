@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * xmrig-guard — XMRig wrapper with hashrate concentration guard
+ * xmrigger— XMRig wrapper with hashrate concentration guard
  *
  * @version  0.1.0
  * @released 2026-04-18
