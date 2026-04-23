@@ -174,7 +174,7 @@ class HashrateMonitor extends EventEmitter {
       this._cancelGrace();
     } else {
       if (this._inGrace) this._cancelGrace();
-      if (prevPct !== null && prevPct >= warnLevel) this.emit('safe', { hashratePct: pct });
+      if (prevPct === null || prevPct >= warnLevel) this.emit('safe', { hashratePct: pct });
     }
   }
 
@@ -191,8 +191,21 @@ class HashrateMonitor extends EventEmitter {
   async _fetchPoolStatsIndependent(url) {
     try {
       const data = await _fetchJson(url, 8000);
-      const h = data.poolHashrate ?? data.hashrate ?? data.pool_hashrate ?? null;
-      return typeof h === 'number' ? h : null;
+      // Try common pool API response shapes (flat and nested)
+      const h = data.poolHashrate
+             ?? data.hashrate
+             ?? data.pool_hashrate
+             ?? data.pool_statistics?.hashRate
+             ?? data.pool_statistics?.hashrate
+             ?? data.stats?.hashrate
+             ?? data.network?.hashrate
+             ?? data.data?.pool_hashrate
+             ?? (Array.isArray(data.data) ? null : data.data?.hashrate)
+             ?? null;
+      if (typeof h === 'number') return h;
+      // nanopool: { data: <number> }
+      if (typeof data.data === 'number') return data.data;
+      return null;
     } catch { return null; }
   }
 
@@ -243,17 +256,31 @@ class HashrateMonitor extends EventEmitter {
 
 function _extractDifficulty(data) {
   if (!data) return null;
-  if (typeof data.difficulty === 'number'            && data.difficulty > 0)            return data.difficulty;
-  if (typeof data.data?.difficulty === 'number'      && data.data.difficulty > 0)       return data.data.difficulty;
-  if (typeof data.last_difficulty === 'number'       && data.last_difficulty > 0)       return data.last_difficulty;
-  if (typeof data.mainchain?.difficulty === 'number' && data.mainchain.difficulty > 0)  return data.mainchain.difficulty;
+  const candidates = [
+    data.difficulty,
+    data.data?.difficulty,
+    data.last_difficulty,
+    data.mainchain?.difficulty,
+    data.network_difficulty,
+    data.top_block_hash_difficulty,
+  ];
+  for (const v of candidates) {
+    const n = typeof v === 'number' ? v : (v != null ? parseInt(v, 10) : NaN);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
   return null;
 }
 
-function _fetchJson(url, timeoutMs = 8000) {
+function _fetchJson(url, timeoutMs = 8000, _redirects = 0) {
   return new Promise((resolve, reject) => {
     const mod = url.startsWith('https') ? https : http;
     const req = mod.get(url, { timeout: timeoutMs }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume();
+        if (_redirects >= 3) return reject(new Error('Too many redirects'));
+        const next = new URL(res.headers.location, url).href;
+        return resolve(_fetchJson(next, timeoutMs, _redirects + 1));
+      }
       if (res.statusCode < 200 || res.statusCode >= 300) {
         res.resume();
         return reject(new Error(`HTTP ${res.statusCode}`));
