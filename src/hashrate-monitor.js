@@ -197,6 +197,7 @@ class HashrateMonitor extends EventEmitter {
              ?? data.pool_hashrate
              ?? data.pool_statistics?.hashRate
              ?? data.pool_statistics?.hashrate
+             ?? data.pool_statistics?.collective?.hashRate
              ?? data.stats?.hashrate
              ?? data.network?.hashrate
              ?? data.data?.pool_hashrate
