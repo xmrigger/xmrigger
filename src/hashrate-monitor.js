@@ -38,13 +38,22 @@ const WARN_RATIO    = 0.85;
 const POLL_DEFAULT  = 30_000;
 const GRACE_DEFAULT = 60_000;
 
+// Endpoints for Monero mainnet difficulty (network hashrate = diff / 120s).
+// 2026-05-09: 3 endpoints removed because dead/dropped (live audit):
+//   community.xmr.to     — DNS dropped
+//   p2pool.io/pool_info  — endpoint changed (404)
+//   mini.p2pool.io       — host down
+// Replaced with: supportxmr.com (network/stats) and p2pool.observer
+// (sidechain.last_found.main_block.difficulty — needs Accept header).
+// _fetchJson now sends Accept: application/json + User-Agent so JSON-only
+// endpoints don't serve HTML to default Node UA. _extractDifficulty handles
+// the nested observer path.
 const DEFAULT_NETWORK_URLS = [
   'https://xmrchain.net/api/networkinfo',
-  'https://community.xmr.to/api/v1/networkinfo',
   'https://moneroblocks.info/api/get_stats',
   'https://localmonero.co/blocks/api/get_stats',
-  'https://p2pool.io/api/pool_info',
-  'https://mini.p2pool.io/api/pool_info',
+  'https://supportxmr.com/api/network/stats',
+  'https://p2pool.observer/api/pool_info',
 ];
 
 class HashrateMonitor extends EventEmitter {
@@ -264,6 +273,8 @@ function _extractDifficulty(data) {
     data.mainchain?.difficulty,
     data.network_difficulty,
     data.top_block_hash_difficulty,
+    // p2pool.observer/api/pool_info: Monero mainnet diff lives nested
+    data.sidechain?.last_found?.main_block?.difficulty,
   ];
   for (const v of candidates) {
     const n = typeof v === 'number' ? v : (v != null ? parseInt(v, 10) : NaN);
@@ -275,7 +286,13 @@ function _extractDifficulty(data) {
 function _fetchJson(url, timeoutMs = 8000, _redirects = 0) {
   return new Promise((resolve, reject) => {
     const mod = url.startsWith('https') ? https : http;
-    const req = mod.get(url, { timeout: timeoutMs }, (res) => {
+    // Some endpoints (e.g. p2pool.observer) serve HTML to default UA and JSON only
+    // when Accept is set explicitly. Provide a generic UA + Accept to be safe.
+    const headers = {
+      'Accept': 'application/json',
+      'User-Agent': 'xmrigger-hashrate-monitor/1.0',
+    };
+    const req = mod.get(url, { timeout: timeoutMs, headers }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         res.resume();
         if (_redirects >= 3) return reject(new Error('Too many redirects'));
