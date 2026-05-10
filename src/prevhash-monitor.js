@@ -149,6 +149,13 @@ class PrevhashMonitor extends EventEmitter {
     if (!this._ownPrevhash) return;
 
     const now = Date.now();
+    // Evict stale entries during the same pass that filters them out.
+    // Without this, the Map grows linearly with the number of peer ids
+    // ever seen — a long-lived federation with peer churn turns this
+    // into a memory leak.
+    for (const [pid, p] of this._peers) {
+      if (now - p.ts >= PEER_STALE_MS) this._peers.delete(pid);
+    }
     const freshPeers = [...this._peers.entries()]
       .filter(([, p]) => now - p.ts < PEER_STALE_MS);
 

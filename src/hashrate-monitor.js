@@ -283,6 +283,41 @@ function _extractDifficulty(data) {
   return null;
 }
 
+// Cap on the size of an upstream JSON body. The legitimate stats endpoints
+// return ~1-50 KB of JSON; 256 KB is generous. Without this cap a hostile
+// or compromised endpoint can exhaust memory and block the event loop in
+// JSON.parse on a single request.
+const MAX_BODY_BYTES = 256 * 1024;
+
+// Hosts/ranges to refuse following a 3xx redirect into. Without this guard
+// a compromised default endpoint could redirect the fetcher into local /
+// metadata services or RFC1918 / link-local destinations and exfiltrate
+// state via DNS rebinding-style attacks. Keep the list aggressive.
+function _isPrivateOrLoopbackHost(host) {
+  if (!host) return true;
+  const h = host.toLowerCase();
+  if (h === 'localhost') return true;
+  if (h.endsWith('.local') || h.endsWith('.internal')) return true;
+  // IPv4 literal
+  const v4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (v4) {
+    const a = +v4[1], b = +v4[2];
+    if (a === 10) return true;                                  // 10/8
+    if (a === 127) return true;                                 // loopback
+    if (a === 169 && b === 254) return true;                    // link-local
+    if (a === 172 && b >= 16 && b <= 31) return true;           // 172.16/12
+    if (a === 192 && b === 168) return true;                    // 192.168/16
+    if (a === 0) return true;                                   // 0/8
+  }
+  // IPv6 literal
+  if (h.startsWith('[')) {
+    const v6 = h.replace(/^\[|\]$/g, '');
+    if (v6 === '::1' || v6 === '::') return true;
+    if (v6.startsWith('fe80:') || v6.startsWith('fc') || v6.startsWith('fd')) return true;
+  }
+  return false;
+}
+
 function _fetchJson(url, timeoutMs = 8000, _redirects = 0) {
   return new Promise((resolve, reject) => {
     const mod = url.startsWith('https') ? https : http;
@@ -296,16 +331,37 @@ function _fetchJson(url, timeoutMs = 8000, _redirects = 0) {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         res.resume();
         if (_redirects >= 3) return reject(new Error('Too many redirects'));
-        const next = new URL(res.headers.location, url).href;
-        return resolve(_fetchJson(next, timeoutMs, _redirects + 1));
+        const next = new URL(res.headers.location, url);
+        // SSRF / metadata-service guard: refuse redirects into private,
+        // loopback, link-local, or *.local/*.internal hosts.
+        if (_isPrivateOrLoopbackHost(next.hostname)) {
+          return reject(new Error(`Refused redirect into non-public host: ${next.hostname}`));
+        }
+        return resolve(_fetchJson(next.href, timeoutMs, _redirects + 1));
       }
       if (res.statusCode < 200 || res.statusCode >= 300) {
         res.resume();
         return reject(new Error(`HTTP ${res.statusCode}`));
       }
-      let raw = '';
-      res.on('data', (c) => { raw += c; });
-      res.on('end', () => { try { resolve(JSON.parse(raw)); } catch { reject(new Error('Invalid JSON')); } });
+      // Bound body accumulation. Prefer a Buffer chain over `raw += c` —
+      // string concat on chunked responses degrades to UTF-8 reinterpretation
+      // per chunk (slow + exposes the parser to surrogate-pair edge cases).
+      let total = 0;
+      const chunks = [];
+      res.on('data', (c) => {
+        total += c.length;
+        if (total > MAX_BODY_BYTES) {
+          res.resume();
+          req.destroy();
+          return reject(new Error(`Response body exceeds ${MAX_BODY_BYTES} bytes`));
+        }
+        chunks.push(c);
+      });
+      res.on('end', () => {
+        if (total > MAX_BODY_BYTES) return;     // already rejected above
+        try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); }
+        catch { reject(new Error('Invalid JSON')); }
+      });
     });
     req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
     req.on('error', reject);
