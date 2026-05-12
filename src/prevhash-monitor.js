@@ -86,6 +86,17 @@ const { EventEmitter } = require('events');
 
 const PEER_STALE_MS = 120_000;  // ignore peers silent for > 2 min
 
+/**
+ * Default clock backed by the real system. The monitor depends only on the
+ * three methods below; replacing this object with a virtual implementation
+ * makes the monitor fully deterministic for testing.
+ */
+const realClock = {
+  now:           () => Date.now(),
+  setInterval:   (fn, ms) => setInterval(fn, ms),
+  clearInterval: (id) => clearInterval(id),
+};
+
 class PrevhashMonitor extends EventEmitter {
   /**
    * @param {object}   opts
@@ -98,6 +109,9 @@ class PrevhashMonitor extends EventEmitter {
    * @param {boolean}  [opts.majorityVote=true]    Use majority vote (v0.2);
    *                                                 false = legacy v0.1 behaviour
    * @param {boolean}  [opts.enabled=true]
+   * @param {object}   [opts.clock=realClock]   Clock with {now, setInterval,
+   *                                              clearInterval}. Override for
+   *                                              deterministic tests.
    */
   constructor({
     poolId            = 'unknown',
@@ -108,6 +122,7 @@ class PrevhashMonitor extends EventEmitter {
     historyK          = 3,
     majorityVote      = true,
     enabled           = true,
+    clock             = realClock,
   } = {}) {
     super();
     this.poolId           = poolId;
@@ -118,11 +133,12 @@ class PrevhashMonitor extends EventEmitter {
     this.historyK         = Math.max(1, historyK | 0);
     this.majorityVote     = majorityVote;
     this.enabled          = enabled;
+    this._clock           = clock;
 
     this._pollTimer    = null;
     this._ownPrevhash  = null;        // current prevhash of our upstream pool
     this._peers        = new Map();   // peerId → { prevhash, ts }
-    this._divergeStart = null;        // Date.now() when divergence first seen
+    this._divergeStart = null;        // clock.now() when divergence first seen
     this._divergeEmitted = false;
     this._stableMinorityTicks = 0;    // consecutive ticks of self-in-minority
   }
@@ -133,20 +149,21 @@ class PrevhashMonitor extends EventEmitter {
       console.warn('[prevhash-monitor] getPrevhash not configured — disabled');
       return this;
     }
-    if (this._pollTimer) clearInterval(this._pollTimer);
+    if (this._pollTimer) this._clock.clearInterval(this._pollTimer);
     this._poll();
-    this._pollTimer = setInterval(() => this._poll(), this.pollIntervalMs);
+    this._pollTimer = this._clock.setInterval(() => this._poll(), this.pollIntervalMs);
     return this;
   }
 
   stop() {
-    clearInterval(this._pollTimer);
+    this._clock.clearInterval(this._pollTimer);
     this._pollTimer = null;
     return this;
   }
 
-  onPeerAnnounce(peerId, prevhash, ts = Date.now()) {
+  onPeerAnnounce(peerId, prevhash, ts) {
     if (!prevhash) return;
+    if (ts === undefined) ts = this._clock.now();
     this._peers.set(peerId, { prevhash, ts });
     this.emit('peer-updated', { peerId, prevhash, ts });
     this._checkDivergence();
@@ -174,7 +191,7 @@ class PrevhashMonitor extends EventEmitter {
    *   verdict === null when undecidable (tie, or no peers).
    */
   _tally() {
-    const now = Date.now();
+    const now = this._clock.now();
     // Evict stale peers in-place to keep the map bounded.
     for (const [pid, p] of this._peers) {
       if (now - p.ts >= PEER_STALE_MS) this._peers.delete(pid);
@@ -290,4 +307,4 @@ class PrevhashMonitor extends EventEmitter {
   }
 }
 
-module.exports = { PrevhashMonitor, PEER_STALE_MS };
+module.exports = { PrevhashMonitor, PEER_STALE_MS, realClock };
