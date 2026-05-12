@@ -299,12 +299,23 @@ Practical guidance:
 |-----------|---------|-------------|--------------|
 | `divergenceMs` | `20 000` | Catches shorter selfish-mining windows; risks triggering on 1–2 s block propagation | Safer against jitter; misses short attacks |
 | `pollIntervalMs` | `5 000` | Tighter time resolution | Less CPU, coarser detection window |
-| `minPeersForAlert` | `2` | Alert on first diverging peer | Require majority — reduces Sybil risk but needs more peers |
+| `historyK` | `3` | Faster reaction; less protection against sub-second flapping | More propagation tolerance; slower reaction |
+| `minPeersForAlert` | `1` | Alert as soon as one peer is fresh | Require more peers — Sybil resistance grows with federation size |
+| `majorityVote` | `true` | — | `false` falls back to v0.1 self-as-oracle (any divergent peer alerts) |
+
+Detection requires **both** time-based persistence (`divergenceMs`) and
+sample-count persistence (`historyK`) before raising. The two are orthogonal:
+a brief flap that satisfies one but not the other is silently absorbed.
+
+Under `majorityVote: true` (default) the verdict is the prev_hash held by
+the largest faction across (self + fresh peers); the monitor raises only if
+**self** is in the minority. Ties are indeterminate and never raise.
 
 Practical guidance:
 - Monero block time is ~120 s; propagation delay is 1–2 s. Keep `divergenceMs ≥ 9 000` to avoid false alarms from normal propagation.
-- In a small federation (2–3 peers), `minPeersForAlert: 1` is correct. With 10+ peers, raise it to `2` or `3`.
-- If you see spurious alerts, increase `divergenceMs` by 5 000 and check your peers' clock sync (NTP drift causes apparent divergence).
+- A single Sybil peer cannot force an alarm under majority vote (2-honest : 1-Sybil = 2:1 in favour of the honest tip). A Sybil set ≥ 50 % of the peer roster can still bypass detection — mitigate at the federation transport layer via peer-identity attestation.
+- In a small federation (2 peers), a 1-vs-1 split is a tie → no alarm. Require ≥ 3 fresh peers to make majority decisions robust.
+- If you see spurious alerts, increase `divergenceMs` by 5 000 or raise `historyK` to 5, and check your peers' clock sync (NTP drift causes apparent divergence).
 
 ---
 
@@ -322,14 +333,33 @@ node demo.js       # runs both guards, ~135 s, no config needed
 ## Tests
 
 ```bash
-npm test
-# or: node test/index.js
+npm test                  # runs unit + integration
+npm run test:unit         # node test/index.js
+npm run test:integration  # node test/integration.js
 ```
 
-10 tests — no external dependencies, no network calls.
+**Unit suite** (`test/index.js`) — 14 tests, Node TAP runner. Covers
+`HashrateMonitor` state machine (SAFE → WARN → CRIT → GRACE → EVACUATE), fork
+detection, grace period; and `PrevhashMonitor` v0.2 majority-vote semantics
+(unanimous, single-peer tie, Sybil neutralisation, self-in-minority,
+`historyK` gating, resolved-on-rejoin, legacy v0.1 fallback).
 
-Covers: HashrateMonitor state machine (SAFE→WARN→CRIT→GRACE→EVACUATE), fork
-detection, grace period, PrevhashMonitor divergence detection and resolution.
+**Integration suite** (`test/integration.js`) — 18 assertions over five
+federated scenarios with three `PrevhashMonitor` instances connected through
+an in-process broadcast bus:
+
+- `S1` unanimous consensus across rolling blocks
+- `S2` selfish mining: one pool on a private tip vs two honest peers
+- `S3` single Sybil node spamming a fake tip
+- `S4` propagation jitter (one pool lags 2 ticks per block roll)
+- `S5` divergence followed by rejoin (exactly one `divergence`, exactly one `resolved`)
+
+The integration test drives time through a `VirtualClock` injected into the
+monitor — no `setTimeout`, no wall-clock dependencies. Output is bit-perfect
+identical across runs and machines, suitable for CI and third-party
+reproduction. A machine-readable JSON summary is printed on the last line.
+
+No external dependencies, no network calls in either suite.
 
 ---
 
@@ -443,18 +473,28 @@ monitor.on('evacuate', ({ reason, fallback }) => {
 });
 monitor.start();
 
-// Guard 2 — Selfish mining (requires federation of ≥2 proxies)
+// Guard 2 — Selfish mining (requires federation of ≥3 fresh peers for
+// majority decisions; smaller federations still detect via divergenceMs
+// but cannot break a 1-vs-1 tie)
 const prevguard = new PrevhashMonitor({
-  poolId:       'pool.hashvault.pro:3333',
-  getPrevhash:  () => myProxy.lastPrevhash,   // from Stratum stream
-  divergenceMs: 20_000,
+  poolId:        'pool.hashvault.pro:3333',
+  getPrevhash:   () => myProxy.lastPrevhash,   // from Stratum stream
+  divergenceMs:  20_000,
+  historyK:      3,      // consecutive stable polls before raising
+  majorityVote:  true,   // raise only when self is in the minority
 });
 prevguard.on('announce',   ({ prevhash }) => federation.broadcastPrevhash({ prevhash }));
-prevguard.on('divergence', ({ ownPrevhash, divergentPeers }) => {
-  console.error('selfish mining suspected — evacuating');
+prevguard.on('divergence', ({ ownPrevhash, canonical, divergentPeers, sampleCount }) => {
+  console.error(
+    `selfish mining suspected — local tip ${ownPrevhash} ` +
+    `diverges from canonical ${canonical} (${sampleCount} stable samples) — evacuating`
+  );
 });
-federation.on('prevhash-announce', ({ from, prevhash }) =>
-  prevguard.onPeerAnnounce(from, prevhash));
+prevguard.on('resolved', ({ prevhash }) => {
+  console.log(`chain rejoined canonical tip ${prevhash}`);
+});
+federation.on('prevhash-announce', ({ from, prevhash, ts }) =>
+  prevguard.onPeerAnnounce(from, prevhash, ts));
 prevguard.start();
 ```
 
