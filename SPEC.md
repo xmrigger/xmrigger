@@ -179,7 +179,7 @@ A proxy sitting between miners and a pool sees every `prevhash` in every
 By sharing these values across a federation of proxies — each watching a
 different pool — divergence becomes observable without any protocol changes.
 
-### Detection logic
+### Detection logic (v0.2)
 
 ```
 Proxy-A watches Pool-X:  prevhash = 0xAAAA  (public chain tip)
@@ -203,24 +203,44 @@ Proxy-B watches Pool-Y:  prevhash = 0xBBBB  ← DIVERGENCE
 }
 ```
 
-2. Each proxy compares received prevhash values against its own.
-3. If disagreement **persists for `divergenceMs`** (default 20 s): emit `divergence`.
-4. Operator can evacuate miners from the suspect pool.
+2. Each proxy tallies votes across **(self + fresh peers)** and computes the
+   canonical verdict by **majority vote**. Ties are indeterminate.
+3. The proxy flags itself as divergent only when its own prevhash is in the
+   *minority* of the verdict — meaning the local pool is the suspect tip,
+   not a peer.
+4. Divergence is emitted only when both stabilisers agree:
+   - the minority condition has persisted for at least `divergenceMs`
+     (wall-clock, default 20 s — Monero orphan-window bound), AND
+   - it has held for at least `historyK` consecutive polling ticks
+     (sample-count, default 3 — absorbs propagation jitter).
+5. Operator can evacuate miners from the suspect pool.
 
-### Why persistence matters
+### Why three stabilisers (and not just one)
 
 A brief prevhash mismatch is normal: pools may receive new blocks at different
-times (propagation latency ~1–2 s). Requiring the divergence to persist for
-several poll cycles eliminates false positives from network jitter.
+times (~1–2 s propagation). The three stabilisers are orthogonal and each
+handles a distinct failure mode:
+
+| Stabiliser     | Threat absorbed                                                  |
+|----------------|------------------------------------------------------------------|
+| Majority vote  | A single Sybil/colluding peer pretending to be on a private tip  |
+| `historyK`     | Sub-second flapping (a peer that briefly diverges then re-converges) |
+| `divergenceMs` | Natural ~1-block orphan window where the local pool is briefly ahead/behind |
+
+A scheme using only the wall-clock timer can be defeated by an attacker
+arranging a single 19 s divergence window per block. The K-of-N gate adds an
+independent sample-count requirement so timing alone cannot bypass detection.
 
 ### What this detects
 
 | Scenario | Detected? |
 |----------|-----------|
-| Pool withholds block and mines privately (selfish mining) | ✓ Yes — prevhash differs from peers |
-| Pool briefly ahead due to propagation delay | ✗ No — resolves within 1–2 polls |
-| Pool runs on a stale tip (stuck node) | ✓ Yes — prevhash stops advancing |
+| Pool withholds block and mines privately (selfish mining) | ✓ Yes — self in prevhash minority vs honest peers |
+| Pool briefly ahead due to propagation delay | ✗ No — `historyK` absorbs sub-second flapping |
+| Pool runs on a stale tip (stuck node) | ✓ Yes — self stays in minority across ticks |
 | Unknown dark pool (no external miners) | ✗ No — no Stratum leakage |
+| Single Sybil peer announcing a fake tip | ✗ No — majority vote neutralises it (2:1 in favour of honest pair) |
+| Sybil set holding ≥ 50 % of fresh peers | ✓ Detection bypass possible — out of scope for v0.2; mitigated at the federation layer via peer-identity attestation (future work) |
 
 ### Sovereignty rule (same as hashrate guard)
 
@@ -238,16 +258,20 @@ A misconfigured peer cannot force evacuation on honest proxies.
 const { PrevhashMonitor } = require('xmrigger');
 
 const mon = new PrevhashMonitor({
-  poolId:        'pool.hashvault.pro:3333',
-  getPrevhash:   () => proxy.lastPrevhash,  // updated from Stratum stream
+  poolId:         'pool.hashvault.pro:3333',
+  getPrevhash:    () => proxy.lastPrevhash,  // updated from Stratum stream
   pollIntervalMs: 5_000,
-  divergenceMs:   20_000,
+  divergenceMs:   20_000,   // wall-clock floor — Monero orphan window
+  historyK:       3,        // sample-count floor — propagation-jitter absorber
+  majorityVote:   true,     // v0.2 default; false = legacy self-as-oracle
 });
 
 // Wire to federation
 mon.on('announce',   ({ prevhash }) => federation.broadcastPrevhash({ prevhash }));
-mon.on('divergence', ({ ownPrevhash, divergentPeers }) => {
-  console.error('selfish mining suspected — evacuating');
+mon.on('divergence', ({ ownPrevhash, canonical, divergentPeers, sampleCount }) => {
+  console.error(`selfish mining suspected — local tip ${ownPrevhash} ` +
+                `diverges from canonical ${canonical} ` +
+                `(${sampleCount} stable samples) — evacuating`);
   // evacuate miners
 });
 mon.on('resolved',   ({ prevhash }) => console.log('chains in sync'));

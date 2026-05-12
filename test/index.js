@@ -197,7 +197,7 @@ describe('HashrateMonitor state machine', () => {
 
 // ── PrevhashMonitor ───────────────────────────────────────────────────────────
 
-describe('PrevhashMonitor divergence detection', () => {
+describe('PrevhashMonitor v0.2 — majority vote + short history', () => {
 
   test('no alert with fewer than minPeersForAlert peers', async () => {
     let ownPrevhash = 'aabbccdd';
@@ -206,13 +206,13 @@ describe('PrevhashMonitor divergence detection', () => {
       getPrevhash:      () => ownPrevhash,
       pollIntervalMs:   30,
       divergenceMs:     50,
-      minPeersForAlert: 2,  // require 2 peers
+      historyK:         1,
+      minPeersForAlert: 2,
     });
 
     const divergences = collect(mon, 'divergence');
 
     mon.start();
-    // Inject only ONE peer with a different prevhash
     mon.onPeerAnnounce('peer-A', 'deadbeef');
     await wait(150);
     mon.stop();
@@ -229,7 +229,7 @@ describe('PrevhashMonitor divergence detection', () => {
       getPrevhash:      () => ownPrevhash,
       pollIntervalMs:   30,
       divergenceMs:     50,
-      minPeersForAlert: 1,
+      historyK:         1,
     });
 
     const divergences = collect(mon, 'divergence');
@@ -244,56 +244,171 @@ describe('PrevhashMonitor divergence detection', () => {
       'should not alert when all peers report same prevhash as own');
   });
 
-  test('divergence emitted after divergenceMs when peers disagree', async () => {
+  test('1-vs-1 tie is indeterminate — no alert', async () => {
+    // Self holds X, single peer holds Y. Tally: {X:1, Y:1} → tie → verdict null.
+    // Under majority vote, ties never raise (correct: not enough info to decide).
     let ownPrevhash = 'aabbccdd';
     const mon = new PrevhashMonitor({
       poolId:           'test-pool',
       getPrevhash:      () => ownPrevhash,
       pollIntervalMs:   30,
-      divergenceMs:     80,   // short window for fast test
-      minPeersForAlert: 1,
+      divergenceMs:     50,
+      historyK:         1,
     });
 
     const divergences = collect(mon, 'divergence');
 
     mon.start();
-    mon.onPeerAnnounce('peer-A', 'deadbeef');  // different hash — start of divergence
+    mon.onPeerAnnounce('peer-A', 'deadbeef');
+    await wait(200);
+    mon.stop();
+
+    assert.strictEqual(divergences.length, 0,
+      '1-vs-1 tie must NOT raise divergence under majority vote');
+  });
+
+  test('Sybil peer in minority does NOT raise alert (2:1 in favour of self)', async () => {
+    // Self + 1 honest peer agree on X; 1 Sybil peer announces Y.
+    // Tally: {X:2, Y:1} → verdict X (self in majority). No alert.
+    const HONEST = 'cafe0001';
+    let ownPrevhash = HONEST;
+    const mon = new PrevhashMonitor({
+      poolId:           'test-pool',
+      getPrevhash:      () => ownPrevhash,
+      pollIntervalMs:   30,
+      divergenceMs:     50,
+      historyK:         1,
+    });
+
+    const divergences = collect(mon, 'divergence');
+
+    mon.start();
+    mon.onPeerAnnounce('peer-honest', HONEST);
+    mon.onPeerAnnounce('peer-sybil',  'deadbeef');
+    await wait(200);
+    mon.stop();
+
+    assert.strictEqual(divergences.length, 0,
+      'majority vote must neutralise a single Sybil peer');
+  });
+
+  test('self in minority (1 vs 2 honest peers) raises divergence', async () => {
+    // Self holds X (selfish pool tip); 2 honest peers hold Y.
+    // Tally: {X:1, Y:2} → verdict Y → self in minority → alert.
+    let ownPrevhash = 'selfishtip';
+    const mon = new PrevhashMonitor({
+      poolId:           'test-pool',
+      getPrevhash:      () => ownPrevhash,
+      pollIntervalMs:   30,
+      divergenceMs:     80,
+      historyK:         3,
+    });
+
+    const divergences = collect(mon, 'divergence');
+
+    mon.start();
+    mon.onPeerAnnounce('peer-A', 'honesttip');
+    mon.onPeerAnnounce('peer-B', 'honesttip');
+    await wait(300);  // enough for both historyK ticks and divergenceMs
+    mon.stop();
+
+    assert.ok(divergences.length >= 1, 'divergence must fire when self is in minority');
+    const ev = divergences[0];
+    assert.strictEqual(ev.ownPrevhash, 'selfishtip');
+    assert.strictEqual(ev.canonical, 'honesttip',
+      'canonical must be the majority verdict');
+    assert.ok(ev.divergentPeers.length === 0,
+      'peers on canonical chain are NOT divergent (only self is)');
+    assert.ok(ev.seenMs >= 80, `seenMs (${ev.seenMs}) should be >= divergenceMs`);
+    assert.ok(ev.sampleCount >= 3, `sampleCount (${ev.sampleCount}) should be >= historyK`);
+  });
+
+  test('historyK gating: divergence held back until K stable ticks', async () => {
+    // 1 vs 2 minority scenario, but with historyK=5 and short divergenceMs=10.
+    // Wall-clock is satisfied almost immediately; the *sample count* gate
+    // is what must keep the alert from firing too eagerly.
+    let ownPrevhash = 'minoritytip';
+    const mon = new PrevhashMonitor({
+      poolId:           'test-pool',
+      getPrevhash:      () => ownPrevhash,
+      pollIntervalMs:   40,
+      divergenceMs:     10,
+      historyK:         5,
+    });
+
+    const divergences = collect(mon, 'divergence');
+
+    mon.start();
+    mon.onPeerAnnounce('peer-A', 'majoritytip');
+    mon.onPeerAnnounce('peer-B', 'majoritytip');
+
+    // After ~80 ms only 2-3 ticks have passed — must NOT have fired yet.
+    await wait(80);
+    assert.strictEqual(divergences.length, 0,
+      `historyK=5 must hold back alert until enough ticks accumulate (got ${divergences.length})`);
+
+    // Wait long enough for 5+ ticks.
     await wait(250);
     mon.stop();
 
-    assert.ok(divergences.length >= 1, 'divergence must be emitted after divergenceMs');
-    assert.strictEqual(divergences[0].ownPrevhash, ownPrevhash);
-    assert.strictEqual(divergences[0].divergentPeers.length, 1);
-    assert.strictEqual(divergences[0].divergentPeers[0].peerId, 'peer-A');
-    assert.ok(divergences[0].seenMs >= 80, `seenMs (${divergences[0].seenMs}) should be >= divergenceMs`);
+    assert.ok(divergences.length >= 1, 'divergence must eventually fire after historyK ticks');
+    assert.ok(divergences[0].sampleCount >= 5,
+      `sampleCount (${divergences[0].sampleCount}) must reach historyK=5`);
   });
 
-  test('resolved emitted when peers return to same prevhash as own', async () => {
-    let ownPrevhash = 'aabbccdd';
+  test('resolved emitted when self rejoins the majority verdict', async () => {
+    // Start: 1 (self) vs 2 (peers) → divergence
+    // Then:  self switches to the majority hash → resolved
+    let ownPrevhash = 'mineline';
     const mon = new PrevhashMonitor({
       poolId:           'test-pool',
       getPrevhash:      () => ownPrevhash,
       pollIntervalMs:   30,
       divergenceMs:     60,
-      minPeersForAlert: 1,
+      historyK:         2,
     });
 
     const divergences = collect(mon, 'divergence');
     const resolveds   = collect(mon, 'resolved');
 
     mon.start();
-    mon.onPeerAnnounce('peer-A', 'deadbeef');  // diverge
-    await wait(150);  // divergence fires
+    mon.onPeerAnnounce('peer-A', 'majoritytip');
+    mon.onPeerAnnounce('peer-B', 'majoritytip');
+    await wait(200);  // divergence fires
 
     assert.ok(divergences.length >= 1, 'divergence must have fired first');
 
-    // Peer rejoins our chain
-    mon.onPeerAnnounce('peer-A', ownPrevhash);
-    await wait(100);
+    // Self switches to canonical chain
+    ownPrevhash = 'majoritytip';
+    await wait(120);
     mon.stop();
 
-    assert.ok(resolveds.length >= 1, 'resolved must be emitted when peers agree again');
-    assert.strictEqual(resolveds[0].prevhash, ownPrevhash);
+    assert.ok(resolveds.length >= 1, 'resolved must be emitted when self rejoins majority');
+    assert.strictEqual(resolveds[0].prevhash, 'majoritytip');
+  });
+
+  test('legacy mode (majorityVote=false) preserves v0.1 self-as-oracle behaviour', async () => {
+    // In legacy mode, a single divergent peer raises an alert (no majority needed).
+    let ownPrevhash = 'aabbccdd';
+    const mon = new PrevhashMonitor({
+      poolId:           'test-pool',
+      getPrevhash:      () => ownPrevhash,
+      pollIntervalMs:   30,
+      divergenceMs:     80,
+      historyK:         1,
+      majorityVote:     false,
+    });
+
+    const divergences = collect(mon, 'divergence');
+
+    mon.start();
+    mon.onPeerAnnounce('peer-A', 'deadbeef');
+    await wait(250);
+    mon.stop();
+
+    assert.ok(divergences.length >= 1,
+      'legacy mode must alert on any divergent peer (no majority required)');
+    assert.strictEqual(divergences[0].divergentPeers[0].peerId, 'peer-A');
   });
 
 });

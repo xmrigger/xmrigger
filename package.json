@@ -1,6 +1,6 @@
 {
   "name": "xmrigger",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Protects XMRig miners from oversized or dishonest pools: auto-evacuates on hashrate concentration and detects selfish mining via prevhash divergence.",
   "author": "tnzx@proton.me",
   "license": "LGPL-2.1",
