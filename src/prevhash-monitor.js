@@ -238,8 +238,14 @@ class PrevhashMonitor extends EventEmitter {
     if (verdict === this._ownPrevhash) {
       // Self in majority — resolved
       if (this._divergeStart !== null) {
+        // Only signal 'resolved' if a 'divergence' was actually emitted.
+        // Transient minority states (block-roll polling skew, <historyK
+        // sub-second blips) leave _divergeStart non-null without ever
+        // raising an alert — operators must not be paged with "resolved"
+        // for an alarm they never saw.
+        const wasEmitted = this._divergeEmitted;
         this._resetMinorityState();
-        this.emit('resolved', { prevhash: this._ownPrevhash });
+        if (wasEmitted) this.emit('resolved', { prevhash: this._ownPrevhash });
       }
       return;
     }
