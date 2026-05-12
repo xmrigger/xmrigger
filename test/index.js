@@ -412,3 +412,121 @@ describe('PrevhashMonitor v0.2 — majority vote + short history', () => {
   });
 
 });
+
+// ── JSON-shape validation hardening (regression — audit 2026-05-12) ──────────
+
+const { _extractDifficulty } = require('../src/hashrate-monitor');
+
+describe('_extractDifficulty — strict integer parse', () => {
+
+  test('accepts plain number', () => {
+    assert.strictEqual(_extractDifficulty({ difficulty: 123456 }), 123456);
+  });
+
+  test('accepts well-formed numeric string', () => {
+    assert.strictEqual(_extractDifficulty({ difficulty: '123456' }), 123456);
+  });
+
+  test('rejects partly-numeric junk like "123abc"', () => {
+    // parseInt("123abc", 10) would have returned 123 — silent swallow of junk.
+    // Number("123abc") returns NaN, which is what we want.
+    assert.strictEqual(_extractDifficulty({ difficulty: '123abc' }), null);
+  });
+
+  test('rejects fractional values like 123.5', () => {
+    // Difficulty is a uint64 on Monero wire — never fractional. A fractional
+    // value indicates either corruption or a hostile endpoint reshaping data.
+    assert.strictEqual(_extractDifficulty({ difficulty: 123.5 }), null);
+    assert.strictEqual(_extractDifficulty({ difficulty: '123.5' }), null);
+  });
+
+  test('rejects zero and negative', () => {
+    assert.strictEqual(_extractDifficulty({ difficulty: 0 }), null);
+    assert.strictEqual(_extractDifficulty({ difficulty: -1 }), null);
+  });
+
+  test('rejects null / undefined / missing field', () => {
+    assert.strictEqual(_extractDifficulty({ difficulty: null }), null);
+    assert.strictEqual(_extractDifficulty({ difficulty: undefined }), null);
+    assert.strictEqual(_extractDifficulty({}), null);
+    assert.strictEqual(_extractDifficulty(null), null);
+  });
+
+  test('finds difficulty in nested observer path', () => {
+    assert.strictEqual(
+      _extractDifficulty({ sidechain: { last_found: { main_block: { difficulty: 999 } } } }),
+      999
+    );
+  });
+});
+
+describe('HashrateMonitor — forkDetected strict check', () => {
+
+  /**
+   * Build a monitor whose only data source is pool-self-reported health.
+   * We override _fetchPoolHealth to return a controlled response, and
+   * _fetchNetworkHashrate so no real HTTP fires.
+   */
+  function makeHealthMonitor(healthResponse) {
+    const mon = new HashrateMonitor({
+      poolHealthUrl:   'http://stub/health',
+      networkDiffUrls: [],
+      threshold:       0.43,
+      pollIntervalMs:  50,
+      gracePeriodMs:   200,
+      enabled:         true,
+    });
+    mon._fetchNetworkHashrate = async () => 1_000_000;
+    mon._fetchPoolHealth      = async () => healthResponse;
+    return mon;
+  }
+
+  test('forkDetected === true triggers fork event and evacuate', async () => {
+    const mon = makeHealthMonitor({ hashratePct: 0.1, forkDetected: true });
+    const forks = collect(mon, 'fork');
+    const evacs = collect(mon, 'evacuate');
+    mon.start();
+    await wait(120);
+    mon.stop();
+    assert.strictEqual(forks.length, 1, 'fork must fire on forkDetected === true');
+    assert.strictEqual(evacs.length, 1, 'evacuate must follow fork');
+  });
+
+  test('forkDetected: "true" (string) does NOT trigger fork', async () => {
+    // Loose `if (r.forkDetected)` would accept the string "true" as truthy.
+    // Strict `=== true` rejects it. Regression for audit finding F15.
+    const mon = makeHealthMonitor({ hashratePct: 0.1, forkDetected: 'true' });
+    const forks = collect(mon, 'fork');
+    mon.start();
+    await wait(120);
+    mon.stop();
+    assert.strictEqual(forks.length, 0, 'string "true" must not trigger fork');
+  });
+
+  test('forkDetected: 1 (truthy number) does NOT trigger fork', async () => {
+    const mon = makeHealthMonitor({ hashratePct: 0.1, forkDetected: 1 });
+    const forks = collect(mon, 'fork');
+    mon.start();
+    await wait(120);
+    mon.stop();
+    assert.strictEqual(forks.length, 0, 'truthy number must not trigger fork');
+  });
+
+  test('forkDetected: false leaves the state machine normal', async () => {
+    const mon = makeHealthMonitor({ hashratePct: 0.1, forkDetected: false });
+    const forks = collect(mon, 'fork');
+    mon.start();
+    await wait(120);
+    mon.stop();
+    assert.strictEqual(forks.length, 0, 'false must not trigger fork');
+  });
+
+  test('forkDetected missing leaves the state machine normal', async () => {
+    const mon = makeHealthMonitor({ hashratePct: 0.1 });
+    const forks = collect(mon, 'fork');
+    mon.start();
+    await wait(120);
+    mon.stop();
+    assert.strictEqual(forks.length, 0, 'missing field must not trigger fork');
+  });
+});

@@ -156,7 +156,10 @@ class HashrateMonitor extends EventEmitter {
         const prevPct = this.lastPct;
         this.lastPct   = r.hashratePct;
         this.lastError = null;
-        if (r.forkDetected) { this.emit('fork', {}); this._startEvacuate('fork'); return; }
+        // Strict equality: a malformed `forkDetected: "true"` (string) or
+        // truthy-by-accident value must not trigger evacuation. The contract
+        // is "boolean true means a fork was observed", not "any truthy value".
+        if (r.forkDetected === true) { this.emit('fork', {}); this._startEvacuate('fork'); return; }
         this._evaluate(r.hashratePct, prevPct, 'pool-self-reported');
         return;
       }
@@ -277,8 +280,12 @@ function _extractDifficulty(data) {
     data.sidechain?.last_found?.main_block?.difficulty,
   ];
   for (const v of candidates) {
-    const n = typeof v === 'number' ? v : (v != null ? parseInt(v, 10) : NaN);
-    if (Number.isFinite(n) && n > 0) return n;
+    // Strict parse: `parseInt("123abc", 10)` returns 123 — accepting that means
+    // we silently swallow partly-numeric junk from an upstream. `Number(v)`
+    // returns NaN for "123abc" and behaves predictably for well-formed inputs.
+    // Difficulty is a uint64 on the wire; require an integer.
+    const n = typeof v === 'number' ? v : Number(v);
+    if (Number.isFinite(n) && Number.isInteger(n) && n > 0) return n;
   }
   return null;
 }
@@ -368,4 +375,9 @@ function _fetchJson(url, timeoutMs = 8000, _redirects = 0) {
   });
 }
 
-module.exports = { HashrateMonitor, DEFAULT_NETWORK_URLS };
+module.exports = {
+  HashrateMonitor,
+  DEFAULT_NETWORK_URLS,
+  // Exported for tests only — not part of the stable public API.
+  _extractDifficulty,
+};
