@@ -25,9 +25,16 @@
     "demo": "node demo.js",
     "demo:hashrate": "node poc/demo.js",
     "demo:prevhash": "node poc/demo-prevhash.js",
-    "test": "node test/index.js && node test/integration.js",
+    "test": "node test/index.js && node test/integration.js && node test/federation-unit.js && node test/federation-e2e.js",
     "test:unit": "node test/index.js",
-    "test:integration": "node test/integration.js"
+    "test:integration": "node test/integration.js",
+    "test:federation": "node test/federation-unit.js",
+    "test:federation:e2e": "node test/federation-e2e.js",
+    "test:redteam": "node test/red-team/run.js",
+    "test:redteam:real": "node test/red-team/run.js --target real"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "ws": "^8.0.0"
+  }
 }

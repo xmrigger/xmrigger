@@ -1,8 +1,14 @@
 # xmrigger
 
-Core detection library. Implements two guards: `HashrateMonitor` watches pool hashrate concentration and evacuates when a pool exceeds the threshold; `PrevhashMonitor` detects selfish mining by comparing prevhash values across federated proxies. Zero dependencies. Can be used standalone in any miner wrapper.
+Selfish-mining defense for Monero pools. Two guards (`HashrateMonitor`, `PrevhashMonitor`) plus an in-process **federation transport** that lets independent proxy operators cross-check their observations. Zero runtime dependencies for the core guards; `ws` is the only runtime dependency for the federation layer.
 
-Part of the [xmrigger suite](https://github.com/xmrigger): `xmrigger` · `xmrigger-mesh` · `xmrigger-proxy`
+Detection runs without any change to the Monero protocol, without any change to XMRig, and without any new traffic visible to the miner.
+
+Specifications:
+- [SPEC.md](SPEC.md) — guards, state machines, recommended thresholds
+- [SPEC-FEDERATION-v1.md](SPEC-FEDERATION-v1.md) — federation transport (wire format, threat model, anti-replay, equivocation handling)
+- [SECURITY.md](SECURITY.md) — reporting policy, disclosure timeline, known limitations
+- [RED-TEAM-LOG.md](RED-TEAM-LOG.md) — adversarial findings and how they were closed
 
 
 [![License: LGPL-2.1](https://img.shields.io/badge/License-LGPL--2.1-blue.svg)](LICENSE)

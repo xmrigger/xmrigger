@@ -102,36 +102,46 @@ On EVACUATE:
 If no fallback is configured: stop mining, wait a configurable backoff
 (default 5 minutes), then retry the primary pool.
 
-## Federation Alert Protocol (optional)
+## Federation Alert Protocol
 
-Nodes participating in a proxy federation MAY broadcast guard alerts to peers
-when they detect a threshold condition. This allows peers that share the same
-upstream pool to react faster.
+Nodes participating in a proxy federation broadcast typed signals to peers
+to share observation across pools. The signals carry hints; sovereignty
+of action remains entirely local (see *Receiving behaviour* below).
 
 ### Wire format
 
-```json
-{
-  "type": "guard-alert",
-  "reason": "threshold" | "fork",
-  "hashratePct": 0.32,
-  "origin": "proxy-name.xmr",
-  "ts": 1713400000000
-}
-```
+The federation transport, frame layout, identity rules, AEAD wrapping,
+rate limits, and equivocation handling are defined in
+[**SPEC-FEDERATION-v1.md**](SPEC-FEDERATION-v1.md).
 
-### Receiving behavior (IMPORTANT)
+Three frame types: `HELLO`, `PREVHASH`, `GUARD`. All frames are 192 bytes
+plaintext, ChaCha20-Poly1305 AEAD-wrapped (220 bytes on the wire), and
+Ed25519-signed by an ephemeral per-session identity proven mining-bound at
+HELLO time.
 
-A node that receives a `guard-alert` from a peer MUST NOT evacuate
-automatically. It MUST:
+> **Legacy note (deprecated, do not implement):** an earlier draft of this
+> document defined an optional JSON-based wire format (`{type:
+> "guard-alert", reason: …, hashratePct: …, origin: …, ts: …}` and similar
+> for prevhash). That format was unsigned, length-variable, schema-loose,
+> and had no replay protection or identity attestation. It is **superseded
+> in full** by SPEC-FEDERATION-v1.md. v1.0 nodes do not interoperate with
+> v0.1 JSON nodes and will not negotiate down.
 
-1. Apply a per-peer rate limit (ignore duplicate alerts within 60s from same peer)
-2. Trigger an immediate independent poll (`pollNow()`)
-3. Evacuate only if its own poll confirms threshold exceeded by its own threshold
+### Receiving behaviour (IMPORTANT — unchanged across protocol versions)
 
-Rationale: a peer with a low threshold (10%) or a misconfigured/malicious peer
-must not be able to cause mass disconnections across the federation. Each node
-is sovereign — it acts only on its own independent measurement.
+A node that receives a federation signal from a peer **MUST NOT evacuate
+automatically**. It MUST:
+
+1. Verify the signal at the federation transport layer (signature, freshness,
+   rate, equivocation; see SPEC-FEDERATION-v1.md §3–§5).
+2. For a `GUARD` frame: trigger an immediate independent local poll
+   (`HashrateMonitor.pollNow()`).
+3. Evacuate only if its own poll confirms the threshold is exceeded by its
+   own configured threshold.
+
+Rationale: a peer with a low threshold or a misconfigured/malicious peer
+must not be able to cause mass disconnections across the federation. Each
+node is sovereign — it acts only on its own independent measurement.
 
 ## Pool Health Endpoint (for pools)
 
@@ -191,17 +201,11 @@ Proxy-A watches Pool-X:  prevhash = 0xAAAA
 Proxy-B watches Pool-Y:  prevhash = 0xBBBB  ← DIVERGENCE
 ```
 
-1. Each proxy broadcasts its upstream `prevhash` to federation peers:
-
-```json
-{
-  "type":     "prevhash-announce",
-  "prevhash": "0xBBBB...",
-  "pool":     "pool-y.xmr:3333",
-  "origin":   "proxy-b.xmr",
-  "ts":       1713400000000
-}
-```
+1. Each proxy broadcasts its upstream `prevhash` to federation peers as a
+   `PREVHASH` frame (binary wire format defined in
+   [SPEC-FEDERATION-v1.md §3.4.2](SPEC-FEDERATION-v1.md)). The frame
+   carries `pool_id`, `prevhash`, and `block_height`, signed by the
+   sender's ephemeral session identity.
 
 2. Each proxy tallies votes across **(self + fresh peers)** and computes the
    canonical verdict by **majority vote**. Ties are indeterminate.
@@ -240,7 +244,7 @@ independent sample-count requirement so timing alone cannot bypass detection.
 | Pool runs on a stale tip (stuck node) | ✓ Yes — self stays in minority across ticks |
 | Unknown dark pool (no external miners) | ✗ No — no Stratum leakage |
 | Single Sybil peer announcing a fake tip | ✗ No — majority vote neutralises it (2:1 in favour of honest pair) |
-| Sybil set holding ≥ 50 % of fresh peers | ✓ Detection bypass possible — out of scope for v0.2; mitigated at the federation layer via peer-identity attestation (future work) |
+| Sybil set holding ≥ 50 % of fresh peers | ✓ Detection bypass possible at the monitor layer — mitigated at the federation transport layer by the mining-bound HELLO attestation defined in [SPEC-FEDERATION-v1.md §4.3](SPEC-FEDERATION-v1.md), which raises the cost of Sybil from "free" to "one running mining proxy per identity". Full K-anonymity ring signatures are deferred to v1.1 contingent on independent crypto review. |
 
 ### Sovereignty rule (same as hashrate guard)
 
